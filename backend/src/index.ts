@@ -1,19 +1,32 @@
-import express from 'express';
-import cors from 'cors';
+import { app } from './app';
+import { config } from './config';
 
-const app = express();
-const PORT = process.env.PORT || 3001;
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-
-// Health check
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok' });
+/**
+ * Start the server
+ */
+const server = app.listen(config.port, () => {
+  console.log(`🎰 Roulette API server running on http://localhost:${config.port}`);
+  console.log(`   Health check: http://localhost:${config.port}/api/health`);
 });
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
+/**
+ * Graceful shutdown handler
+ */
+const shutdown = (signal: string) => {
+  console.log(`\n${signal} received. Shutting down gracefully...`);
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
+
+  // Force close after 10 seconds
+  setTimeout(() => {
+    console.error('Forcing shutdown');
+    process.exit(1);
+  }, 10000);
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+
+export default server;
